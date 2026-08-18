@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Link } from "react-router";
+import { Loader2, TriangleAlert } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCreatePayrollRun } from "./hooks";
+import { useCreatePayrollRun, useMissingSalaryEmployees } from "./hooks";
 
 function currentMonthValue(): string {
   const now = new Date();
@@ -13,6 +14,7 @@ function currentMonthValue(): string {
 
 export function GenerateRunDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const create = useCreatePayrollRun();
+  const { data: missingSalary } = useMissingSalaryEmployees();
   const [month, setMonth] = useState(currentMonthValue());
 
   useEffect(() => {
@@ -38,6 +40,22 @@ export function GenerateRunDialog({ open, onOpenChange }: { open: boolean; onOpe
             Generates one payslip per employee with a salary set, computed from that month's attendance and approved leave.
           </p>
         </div>
+
+        {missingSalary && missingSalary.length > 0 && (
+          <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs">
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+            <div>
+              <p className="text-foreground">
+                {missingSalary.length} employee{missingSalary.length > 1 ? "s" : ""} will be skipped — no salary set:
+              </p>
+              <p className="mt-0.5 text-muted-foreground">{missingSalary.map((e) => e.name).join(", ")}</p>
+              <Link to="/payroll?tab=salary-setup" className="mt-1 inline-block font-medium text-primary hover:underline" onClick={() => onOpenChange(false)}>
+                Set salaries first →
+              </Link>
+            </div>
+          </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

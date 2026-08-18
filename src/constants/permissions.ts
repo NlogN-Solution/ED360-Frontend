@@ -95,7 +95,12 @@ export const MODULE_ROLES = {
   whatsapp: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MANAGER, UserRole.COUNSELLOR],
   marketing: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MARKETING],
   automation: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
-  reports: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
+  // Broadened per report category — see backend/app/services/report_registry.py's
+  // REPORT_DATASETS role lists (leads/marketing get lead reports, counsellors
+  // get applications, managers/finance get workforce reports). This entry is
+  // the union, used only for nav-gating; the Reports page itself only shows
+  // the datasets the backend actually authorizes for the current role.
+  reports: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MANAGER, UserRole.COUNSELLOR, UserRole.MARKETING, UserRole.FINANCE],
   // Real data now — backed by GET /activity-logs.
   auditLogs: [UserRole.ADMIN, UserRole.SUPER_ADMIN],
   resources: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.COUNSELLOR, UserRole.STAFF],
@@ -109,6 +114,7 @@ export const MODULE_ROLES = {
   // kept empty here so no role accidentally gains access through canAccessModule.
   platform: [],
   settings: ALL_ROLES,
+  profile: ALL_ROLES,
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_ROLES;
@@ -135,6 +141,35 @@ export function isManagerRole(role: UserRole | undefined): boolean {
 /** GET /users(/{id}) also allows counsellor, scoped server-side to student accounts only. */
 export function canBrowseApplicants(role: UserRole | undefined): boolean {
   return isManagerRole(role) || role === UserRole.COUNSELLOR;
+}
+
+/**
+ * Mirrors backend/app/routes/payroll.py's MANAGE_ROLES exactly — deliberately
+ * tighter than canEditEmploymentDetails (excludes manager), since payroll is
+ * the one People/HR domain that moves money. Shared by PayrollPage and
+ * EmployeeProfilePage rather than each redefining it.
+ */
+export function canManagePayroll(role: UserRole | undefined): boolean {
+  return role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
+}
+
+/** Mirrors backend/app/routes/payroll.py's VIEW_ROLES — read-only team visibility. */
+export function canViewTeamPayroll(role: UserRole | undefined): boolean {
+  return canManagePayroll(role) || role === UserRole.MANAGER;
+}
+
+/** Mirrors RESPONSIBILITY_MODULE_DEFAULTS["write"] in backend/app/core/rbac.py —
+ * creating/editing/publishing/archiving/assigning duties and job roles.
+ * Approximation only: the backend's dynamic per-org RolePermission system is
+ * the real gate, same "UI hint, backend enforces" relationship as everywhere
+ * else in this app. */
+export function canManageDuties(role: UserRole | undefined): boolean {
+  return role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN || role === UserRole.MANAGER;
+}
+
+/** Mirrors backend/app/routes/resource.py's MANAGE_ROLES — uploading/writing/editing resources. */
+export function canManageResources(role: UserRole | undefined): boolean {
+  return role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
 }
 
 /**

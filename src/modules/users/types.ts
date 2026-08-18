@@ -87,6 +87,7 @@ export interface EmployeeProfileRead {
   department: string | null;
   department_id: string | null;
   designation: string | null;
+  job_role_id: string | null;
   joining_date: string | null;
   employment_status: string | null;
   employment_type: EmploymentType | null;
@@ -98,12 +99,13 @@ export interface EmployeeProfileRead {
   manager_id: string | null;
   department_name: string | null;
   office_name: string | null;
+  job_role_name: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export type EmployeeProfileUpsertPayload = Partial<
-  Omit<EmployeeProfileRead, "id" | "user_id" | "created_at" | "updated_at" | "department_name" | "office_name">
+  Omit<EmployeeProfileRead, "id" | "user_id" | "created_at" | "updated_at" | "department_name" | "office_name" | "job_role_name">
 >;
 
 export interface EmployeeEmploymentEventRead {

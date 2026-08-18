@@ -96,6 +96,13 @@ const TONE_MAP: Record<string, StatusTone> = {
   chose_another_consultancy: "danger",
   invalid_lead: "danger",
   duplicate_lead: "danger",
+
+  // duties (status + priority)
+  published: "success",
+  archived: "neutral",
+  normal: "neutral",
+  important: "warning",
+  critical: "danger",
 };
 
 export function toneForStatus(status: string): StatusTone {

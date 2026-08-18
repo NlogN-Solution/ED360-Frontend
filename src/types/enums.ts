@@ -90,6 +90,47 @@ export const PayslipLineType = {
 } as const;
 export type PayslipLineType = (typeof PayslipLineType)[keyof typeof PayslipLineType];
 
+export const PayslipLineItemCategory = {
+  TAX: "tax",
+  PROVIDENT_FUND: "provident_fund",
+  BONUS: "bonus",
+  ALLOWANCE: "allowance",
+  OTHER: "other",
+} as const;
+export type PayslipLineItemCategory = (typeof PayslipLineItemCategory)[keyof typeof PayslipLineItemCategory];
+
+export const DutyType = {
+  ROLE_RESPONSIBILITY: "role_responsibility",
+  CODE_OF_CONDUCT: "code_of_conduct",
+  POLICY: "policy",
+  GUIDELINE: "guideline",
+  SOP: "sop",
+  COMPLIANCE: "compliance",
+  KPI_EXPECTATION: "kpi_expectation",
+  GENERAL: "general",
+} as const;
+export type DutyType = (typeof DutyType)[keyof typeof DutyType];
+
+export const DutyPriority = {
+  NORMAL: "normal",
+  IMPORTANT: "important",
+  CRITICAL: "critical",
+} as const;
+export type DutyPriority = (typeof DutyPriority)[keyof typeof DutyPriority];
+
+export const DutyStatus = {
+  DRAFT: "draft",
+  PUBLISHED: "published",
+  ARCHIVED: "archived",
+} as const;
+export type DutyStatus = (typeof DutyStatus)[keyof typeof DutyStatus];
+
+export const ResourceType = {
+  FILE: "file",
+  ARTICLE: "article",
+} as const;
+export type ResourceType = (typeof ResourceType)[keyof typeof ResourceType];
+
 export const InstitutionType = {
   BACHELOR: "bachelor",
   DIPLOMA: "diploma",

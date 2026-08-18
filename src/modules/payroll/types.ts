@@ -1,4 +1,4 @@
-import type { PayrollRunStatus, PayslipLineType } from "@/types/enums";
+import type { PayrollRunStatus, PayslipLineItemCategory, PayslipLineType } from "@/types/enums";
 
 export interface SalaryStructure {
   id: string;
@@ -38,14 +38,20 @@ export interface PayrollRun {
   updated_at: string;
 }
 
+export interface SkippedEmployee {
+  id: string;
+  name: string;
+}
+
 export interface PayrollRunGenerateResult extends PayrollRun {
-  skipped_employees: number;
+  skipped_employees: SkippedEmployee[];
 }
 
 export interface PayslipLineItem {
   id: string;
   payslip_id: string;
   type: PayslipLineType;
+  category: PayslipLineItemCategory;
   label: string;
   amount: number;
   created_by: string | null;
@@ -54,8 +60,36 @@ export interface PayslipLineItem {
 
 export interface PayslipLineItemCreatePayload {
   type: PayslipLineType;
+  category?: PayslipLineItemCategory;
   label: string;
   amount: number;
+}
+
+export interface RecurringLineItem {
+  id: string;
+  organization_id: string | null;
+  user_id: string;
+  type: PayslipLineType;
+  category: PayslipLineItemCategory;
+  label: string;
+  amount: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RecurringLineItemCreatePayload {
+  type: PayslipLineType;
+  category?: PayslipLineItemCategory;
+  label: string;
+  amount: number;
+}
+
+export interface RecurringLineItemUpdatePayload {
+  category?: PayslipLineItemCategory;
+  label?: string;
+  amount?: number;
+  is_active?: boolean;
 }
 
 export interface Payslip {

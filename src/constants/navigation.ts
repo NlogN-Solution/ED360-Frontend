@@ -88,7 +88,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Attendance", path: "/attendance", icon: Clock3, module: "attendance" },
       { label: "Leave", path: "/leave", icon: CalendarClock, module: "leave" },
       { label: "Payroll", path: "/payroll", icon: Banknote, module: "payroll" },
-      { label: "Duties", path: "/responsibilities", icon: ListChecks, module: "responsibilities" },
+      { label: "Duties", path: "/duties", icon: ListChecks, module: "responsibilities" },
       { label: "Contacts", path: "/contacts", icon: Contact, module: "contacts" },
     ],
   },

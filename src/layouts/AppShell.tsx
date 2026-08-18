@@ -23,12 +23,16 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex h-svh overflow-hidden bg-background">
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <ImpersonationBanner />
-        <Topbar />
-        <main className="flex-1 overflow-y-auto">
+    <div className="flex h-svh overflow-hidden bg-background print:block print:h-auto print:overflow-visible">
+      <div className="print:hidden">
+        <Sidebar />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col print:block">
+        <div className="print:hidden">
+          <ImpersonationBanner />
+          <Topbar />
+        </div>
+        <main className="flex-1 overflow-y-auto print:overflow-visible">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -36,7 +40,7 @@ export function AppShell() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="mx-auto max-w-[1400px] px-6 py-5"
+              className="mx-auto max-w-[1400px] px-6 py-5 print:max-w-full print:p-0"
             >
               <Outlet />
             </motion.div>

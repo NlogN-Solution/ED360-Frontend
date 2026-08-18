@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -6,32 +7,28 @@ import { DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthStore } from "@/services/authStore";
 import { useEmployeePayslipHistory, usePayrollRuns } from "@/modules/payroll/hooks";
 import { GenerateRunDialog } from "@/modules/payroll/GenerateRunDialog";
 import { PayrollRunDetailDialog } from "@/modules/payroll/PayrollRunDetailDialog";
-import { PayslipDetailDialog } from "@/modules/payroll/PayslipDetailDialog";
+import { SalarySetupTab } from "@/modules/payroll/SalarySetupTab";
 import { monthLabel } from "@/modules/payroll/utils";
 import type { PayrollRun, Payslip } from "@/modules/payroll/types";
-import { UserRole } from "@/types/enums";
+import { canManagePayroll, canViewTeamPayroll } from "@/constants/permissions";
 import { formatCurrency, formatDateTime } from "@/utils/format";
-
-function canManagePayroll(role: UserRole | undefined): boolean {
-  return role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
-}
-
-function canViewTeamPayroll(role: UserRole | undefined): boolean {
-  return canManagePayroll(role) || role === UserRole.MANAGER;
-}
 
 export function PayrollPage() {
   const currentUser = useAuthStore((s) => s.user);
   const canManage = canManagePayroll(currentUser?.role);
   const canViewTeam = canViewTeamPayroll(currentUser?.role);
+  const navigate = useNavigate();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") ?? "my-payslips";
 
   const [generateOpen, setGenerateOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
-  const [selectedPayslipId, setSelectedPayslipId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const { data: myPayslips, isLoading: myLoading } = useEmployeePayslipHistory(currentUser?.id);
@@ -59,6 +56,17 @@ export function PayrollPage() {
     [],
   );
 
+  const myPayslipsTable = (
+    <DataTable
+      columns={myColumns}
+      data={myPayslips?.items ?? []}
+      isLoading={myLoading}
+      getRowId={(row) => row.id}
+      onRowClick={(row) => navigate(`/payroll/payslips/${row.id}`)}
+      emptyState={<EmptyState icon={Receipt} title="No payslips yet" className="border-none py-14" />}
+    />
+  );
+
   return (
     <div>
       <PageHeader
@@ -73,34 +81,41 @@ export function PayrollPage() {
         }
       />
 
-      <div className="mb-8">
-        <p className="mb-3 text-[13px] font-semibold text-foreground">My payslips</p>
-        <DataTable
-          columns={myColumns}
-          data={myPayslips?.items ?? []}
-          isLoading={myLoading}
-          getRowId={(row) => row.id}
-          onRowClick={(row) => setSelectedPayslipId(row.id)}
-          emptyState={<EmptyState icon={Receipt} title="No payslips yet" className="border-none py-14" />}
-        />
-      </div>
+      {canViewTeam ? (
+        <Tabs value={activeTab} onValueChange={(v) => setSearchParams((prev) => ({ ...Object.fromEntries(prev), tab: v }))}>
+          <TabsList>
+            <TabsTrigger value="my-payslips">My Payslips</TabsTrigger>
+            <TabsTrigger value="payroll-runs">Payroll Runs</TabsTrigger>
+            {canManage && <TabsTrigger value="salary-setup">Salary Setup</TabsTrigger>}
+          </TabsList>
 
-      {canViewTeam && (
-        <div>
-          <p className="mb-3 text-[13px] font-semibold text-foreground">Payroll runs</p>
-          <DataTable
-            columns={runColumns}
-            data={runs?.items ?? []}
-            isLoading={runsLoading}
-            getRowId={(row) => row.id}
-            page={page}
-            limit={12}
-            total={runs?.total}
-            onPageChange={setPage}
-            onRowClick={(row) => setSelectedRunId(row.id)}
-            emptyState={<EmptyState icon={Receipt} title="No payroll runs yet" className="border-none py-14" />}
-          />
-        </div>
+          <TabsContent value="my-payslips" className="mt-4">
+            {myPayslipsTable}
+          </TabsContent>
+
+          <TabsContent value="payroll-runs" className="mt-4">
+            <DataTable
+              columns={runColumns}
+              data={runs?.items ?? []}
+              isLoading={runsLoading}
+              getRowId={(row) => row.id}
+              page={page}
+              limit={12}
+              total={runs?.total}
+              onPageChange={setPage}
+              onRowClick={(row) => setSelectedRunId(row.id)}
+              emptyState={<EmptyState icon={Receipt} title="No payroll runs yet" className="border-none py-14" />}
+            />
+          </TabsContent>
+
+          {canManage && (
+            <TabsContent value="salary-setup" className="mt-4">
+              <SalarySetupTab />
+            </TabsContent>
+          )}
+        </Tabs>
+      ) : (
+        myPayslipsTable
       )}
 
       <GenerateRunDialog open={generateOpen} onOpenChange={setGenerateOpen} />
@@ -109,15 +124,6 @@ export function PayrollPage() {
         open={selectedRunId !== null}
         onOpenChange={(open) => {
           if (!open) setSelectedRunId(null);
-        }}
-        canManage={canManage}
-        onSelectPayslip={(id) => setSelectedPayslipId(id)}
-      />
-      <PayslipDetailDialog
-        payslipId={selectedPayslipId}
-        open={selectedPayslipId !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedPayslipId(null);
         }}
         canManage={canManage}
       />

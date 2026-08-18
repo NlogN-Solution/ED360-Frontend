@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
   Banknote,
@@ -38,12 +38,15 @@ import { StaffPicker } from "@/modules/people/StaffPicker";
 import { useEmployeeAttendanceSummary } from "@/modules/attendance/hooks";
 import { useLeaveBalance, useLeaveRequests, useLeaveTypes } from "@/modules/leave/hooks";
 import type { LeaveRequest } from "@/modules/leave/types";
-import { useEmployeePayslipHistory, useSalaryStructure, useUpsertSalaryStructure } from "@/modules/payroll/hooks";
-import { PayslipDetailDialog } from "@/modules/payroll/PayslipDetailDialog";
-import type { Payslip, SalaryStructure } from "@/modules/payroll/types";
+import { useEmployeePayslipHistory, useSalaryStructure } from "@/modules/payroll/hooks";
+import { SalaryStructureForm } from "@/modules/payroll/SalaryStructureForm";
+import type { Payslip } from "@/modules/payroll/types";
+import { useJobRoles } from "@/modules/jobRoles/hooks";
+import { useMyDuties } from "@/modules/duties/hooks";
 import { StatCard } from "@/components/shared/StatCard";
 import { DataTable } from "@/components/shared/DataTable";
 import type { ColumnDef } from "@tanstack/react-table";
+import { canManageDuties, canManagePayroll } from "@/constants/permissions";
 import { EmploymentType, UserRole } from "@/types/enums";
 import { formatCurrency, formatDate, formatDuration, formatRelativeTime, initials, toTitleCase } from "@/utils/format";
 
@@ -291,7 +294,7 @@ export function EmployeeProfilePage() {
           <EmployeePayrollSummaryCard userId={user.id} />
         </TabsContent>
         <TabsContent value="duties" className="mt-4">
-          <ComingSoonTab icon={ListChecks} label="Duties" />
+          <EmployeeDutiesCard userId={user.id} />
         </TabsContent>
         <TabsContent value="performance" className="mt-4">
           <ComingSoonTab icon={CheckCircle2} label="Performance" />
@@ -398,19 +401,18 @@ function EmployeeLeaveSummaryCard({ userId }: { userId: string }) {
   );
 }
 
-// Mirrors backend/app/routes/payroll.py's MANAGE_ROLES exactly — deliberately
-// tighter than canEditEmploymentDetails (excludes manager), since payroll is
-// the one People/HR domain that moves money.
-function canManagePayroll(role: UserRole | undefined): boolean {
-  return role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
+function maskAccountNumber(value: string | null): string | null {
+  if (!value) return null;
+  if (value.length <= 4) return value;
+  return `••••${value.slice(-4)}`;
 }
 
 function EmployeePayrollSummaryCard({ userId }: { userId: string }) {
   const role = useAuthStore((s) => s.user?.role);
   const canManage = canManagePayroll(role);
+  const navigate = useNavigate();
   const { data: structure, isLoading: structureLoading } = useSalaryStructure(userId);
   const { data: payslips, isLoading: payslipsLoading } = useEmployeePayslipHistory(userId);
-  const [selectedPayslipId, setSelectedPayslipId] = useState<string | null>(null);
 
   const columns: ColumnDef<Payslip, any>[] = [
     { accessorKey: "run_period", header: "Period" },
@@ -432,10 +434,11 @@ function EmployeePayrollSummaryCard({ userId }: { userId: string }) {
         <div className="rounded-xl border border-border bg-card p-4">
           <h2 className="mb-3 text-[13px] font-semibold text-foreground">Salary</h2>
           {structure ? (
-            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
               <Field label="Basic salary" value={formatCurrency(structure.basic_salary, structure.currency)} />
               <Field label="Bank" value={structure.bank_name} />
               <Field label="Account holder" value={structure.bank_account_name} />
+              <Field label="Account number" value={maskAccountNumber(structure.bank_account_number)} />
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No salary structure set.</p>
@@ -450,82 +453,74 @@ function EmployeePayrollSummaryCard({ userId }: { userId: string }) {
           data={payslips?.items ?? []}
           isLoading={payslipsLoading}
           getRowId={(row) => row.id}
-          onRowClick={(row) => setSelectedPayslipId(row.id)}
+          onRowClick={(row) => navigate(`/payroll/payslips/${row.id}`)}
           emptyState={<EmptyState icon={Banknote} title="No payslips yet" className="border-none py-10" />}
         />
       </div>
-
-      <PayslipDetailDialog
-        payslipId={selectedPayslipId}
-        open={selectedPayslipId !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedPayslipId(null);
-        }}
-        canManage={canManage}
-      />
     </div>
   );
 }
 
-function SalaryStructureForm({ userId, structure }: { userId: string; structure: SalaryStructure | null }) {
-  const upsert = useUpsertSalaryStructure(userId);
-  const [basicSalary, setBasicSalary] = useState("");
-  const [currency, setCurrency] = useState("NPR");
-  const [bankName, setBankName] = useState("");
-  const [bankAccountName, setBankAccountName] = useState("");
-  const [bankAccountNumber, setBankAccountNumber] = useState("");
+function EmployeeDutiesCard({ userId }: { userId: string }) {
+  const currentUser = useAuthStore((s) => s.user);
+  const isSelf = currentUser?.id === userId;
+  const canView = canManageDuties(currentUser?.role) || isSelf;
+  const { data: profile } = useEmployeeProfile(userId);
+  const { data: myDuties, isLoading } = useMyDuties();
 
-  useEffect(() => {
-    setBasicSalary(structure ? String(structure.basic_salary) : "");
-    setCurrency(structure?.currency ?? "NPR");
-    setBankName(structure?.bank_name ?? "");
-    setBankAccountName(structure?.bank_account_name ?? "");
-    setBankAccountNumber(structure?.bank_account_number ?? "");
-  }, [structure]);
+  if (!canView) {
+    return (
+      <EmptyState
+        icon={ListChecks}
+        title="Not visible"
+        description="Only Admin/Super Admin/Manager can view another employee's duties."
+        className="border-none py-10"
+      />
+    );
+  }
 
-  function handleSave() {
-    const salary = Number(basicSalary);
-    if (!salary || salary <= 0) return;
-    upsert.mutate({
-      basic_salary: salary,
-      currency: currency || "NPR",
-      bank_name: bankName || null,
-      bank_account_name: bankAccountName || null,
-      bank_account_number: bankAccountNumber || null,
-    });
+  // Duty applicability (role + department + direct assignment) is resolved
+  // server-side only for the current user (GET /duties/my) — there's no
+  // "resolve for an arbitrary target user" endpoint, so admins viewing a
+  // colleague's profile get the role/department context plus a link into
+  // Duties itself, rather than a second, parallel resolution here.
+  if (!isSelf) {
+    return (
+      <div className="rounded-lg border border-border p-4">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <Field label="Job role" value={profile?.job_role_name} />
+          <Field label="Department" value={profile?.department_name} />
+        </div>
+        <Button variant="outline" size="sm" className="mt-3" asChild>
+          <Link to="/duties">View Duties &amp; Responsibilities</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (isLoading) return <Skeleton className="h-32 w-full rounded-lg" />;
+
+  const duties = myDuties?.items ?? [];
+  if (duties.length === 0) {
+    return <EmptyState icon={ListChecks} title="No duties assigned" className="border-none py-10" />;
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-[13px] font-semibold text-foreground">Salary</h2>
-        <Button size="sm" disabled={!basicSalary || upsert.isPending} onClick={handleSave}>
-          {upsert.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          Save
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label>Basic salary</Label>
-          <Input type="number" min={0} value={basicSalary} onChange={(e) => setBasicSalary(e.target.value)} placeholder="50000" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Currency</Label>
-          <Input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} placeholder="NPR" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Bank name</Label>
-          <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Optional" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Account holder name</Label>
-          <Input value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} placeholder="Optional" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Account number</Label>
-          <Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} placeholder="Optional" />
-        </div>
-      </div>
+    <div className="space-y-2">
+      {duties.map((duty) => (
+        <Link key={duty.id} to={`/duties/${duty.id}`} className="block rounded-lg border border-border p-3 hover:border-primary/40">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-foreground">{duty.title}</p>
+            {duty.requires_acknowledgement && !duty.is_acknowledged_by_me && (
+              <span className="text-xs font-medium text-warning">Needs acknowledgement</span>
+            )}
+          </div>
+          <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span>{toTitleCase(duty.type)}</span>
+            {duty.category && <span>{duty.category}</span>}
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -534,12 +529,14 @@ function EmploymentForm({ userId }: { userId: string }) {
   const { data: profile } = useEmployeeProfile(userId);
   const { data: departments } = useDepartments({ limit: 100 });
   const { data: offices } = useOffices({ limit: 100 });
+  const { data: jobRoles } = useJobRoles();
   const upsert = useUpsertEmployeeProfile(userId);
 
   const [employeeCode, setEmployeeCode] = useState("");
   const [departmentId, setDepartmentId] = useState<string | undefined>(undefined);
   const [officeId, setOfficeId] = useState<string | undefined>(undefined);
   const [designation, setDesignation] = useState("");
+  const [jobRoleId, setJobRoleId] = useState<string | undefined>(undefined);
   const [employmentType, setEmploymentType] = useState<string | undefined>(undefined);
   const [employmentStatus, setEmploymentStatus] = useState<string | undefined>(undefined);
   const [officeLocation, setOfficeLocation] = useState("");
@@ -554,6 +551,7 @@ function EmploymentForm({ userId }: { userId: string }) {
     setDepartmentId(profile?.department_id ?? undefined);
     setOfficeId(profile?.office_id ?? undefined);
     setDesignation(profile?.designation ?? "");
+    setJobRoleId(profile?.job_role_id ?? undefined);
     setEmploymentType(profile?.employment_type ?? undefined);
     setEmploymentStatus(profile?.employment_status ?? undefined);
     setOfficeLocation(profile?.office_location ?? "");
@@ -570,6 +568,7 @@ function EmploymentForm({ userId }: { userId: string }) {
       department_id: departmentId ?? null,
       office_id: officeId ?? null,
       designation: designation || null,
+      job_role_id: jobRoleId ?? null,
       employment_type: (employmentType as EmploymentType) || null,
       employment_status: employmentStatus || null,
       office_location: officeLocation || null,
@@ -615,6 +614,23 @@ function EmploymentForm({ userId }: { userId: string }) {
         <div className="space-y-1.5">
           <Label>Position</Label>
           <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Senior Counsellor" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Job role</Label>
+          <Select value={jobRoleId ?? "none"} onValueChange={(v) => setJobRoleId(v === "none" ? undefined : v)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select job role…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Unassigned</SelectItem>
+              {(jobRoles ?? []).map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">Drives which Duties &amp; Responsibilities apply to this employee.</p>
         </div>
 
         <div className="space-y-1.5">

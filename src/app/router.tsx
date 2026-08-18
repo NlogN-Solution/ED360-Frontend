@@ -36,6 +36,7 @@ const UniversityDetailPage = lazy(() =>
 );
 const ProgramDetailPage = lazy(() => import("@/pages/academic/ProgramDetailPage").then((m) => ({ default: m.ProgramDetailPage })));
 const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const ProfilePage = lazy(() => import("@/pages/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 
 const PeopleDirectoryPage = lazy(() => import("@/pages/people/PeopleDirectoryPage").then((m) => ({ default: m.PeopleDirectoryPage })));
 const EmployeeProfilePage = lazy(() => import("@/pages/people/EmployeeProfilePage").then((m) => ({ default: m.EmployeeProfilePage })));
@@ -44,16 +45,19 @@ const OfficesPage = lazy(() => import("@/pages/people/OfficesPage").then((m) => 
 const AttendancePage = lazy(() => import("@/pages/attendance/AttendancePage").then((m) => ({ default: m.AttendancePage })));
 const LeavePage = lazy(() => import("@/pages/leave/LeavePage").then((m) => ({ default: m.LeavePage })));
 const PayrollPage = lazy(() => import("@/pages/payroll/PayrollPage").then((m) => ({ default: m.PayrollPage })));
-const ResponsibilitiesPage = lazy(() => import("@/pages/tier-b").then((m) => ({ default: m.ResponsibilitiesPage })));
+const PayslipPage = lazy(() => import("@/pages/payroll/PayslipPage").then((m) => ({ default: m.PayslipPage })));
+const DutiesPage = lazy(() => import("@/pages/duties/DutiesPage").then((m) => ({ default: m.DutiesPage })));
+const DutyDetailPage = lazy(() => import("@/pages/duties/DutyDetailPage").then((m) => ({ default: m.DutyDetailPage })));
 const ContactsPage = lazy(() => import("@/pages/contacts/ContactsPage").then((m) => ({ default: m.ContactsPage })));
 const CommunicationPage = lazy(() =>
   import("@/pages/communication/CommunicationPage").then((m) => ({ default: m.CommunicationPage })),
 );
-const MarketingPage = lazy(() => import("@/pages/tier-b").then((m) => ({ default: m.MarketingPage })));
+const MarketingPage = lazy(() => import("@/pages/marketing/MarketingPage").then((m) => ({ default: m.MarketingPage })));
 const AutomationPage = lazy(() => import("@/pages/tier-b").then((m) => ({ default: m.AutomationPage })));
-const ReportsPage = lazy(() => import("@/pages/tier-b").then((m) => ({ default: m.ReportsPage })));
+const ReportsPage = lazy(() => import("@/pages/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const AuditLogsPage = lazy(() => import("@/pages/tier-b").then((m) => ({ default: m.AuditLogsPage })));
-const ResourcesPage = lazy(() => import("@/pages/tier-b").then((m) => ({ default: m.ResourcesPage })));
+const ResourcesPage = lazy(() => import("@/pages/resources/ResourcesPage").then((m) => ({ default: m.ResourcesPage })));
+const ResourceDetailPage = lazy(() => import("@/pages/resources/ResourceDetailPage").then((m) => ({ default: m.ResourceDetailPage })));
 const AIAssistantPage = lazy(() => import("@/pages/tier-b").then((m) => ({ default: m.AIAssistantPage })));
 const IntegrationsPage = lazy(() =>
   import("@/pages/integrations/IntegrationsPage").then((m) => ({ default: m.IntegrationsPage })),
@@ -139,7 +143,9 @@ export const router = createBrowserRouter([
           { path: "/attendance", element: withModule("attendance", <AttendancePage />) },
           { path: "/leave", element: withModule("leave", <LeavePage />) },
           { path: "/payroll", element: withModule("payroll", <PayrollPage />) },
-          { path: "/responsibilities", element: withModule("responsibilities", <ResponsibilitiesPage />) },
+          { path: "/payroll/payslips/:payslipId", element: withModule("payroll", <PayslipPage />) },
+          { path: "/duties", element: withModule("responsibilities", <DutiesPage />) },
+          { path: "/duties/:dutyId", element: withModule("responsibilities", <DutyDetailPage />) },
           { path: "/contacts", element: withModule("contacts", <ContactsPage />) },
           { path: "/communication", element: withModule("communication", <CommunicationPage />) },
           { path: "/marketing", element: withModule("marketing", <MarketingPage />) },
@@ -147,6 +153,7 @@ export const router = createBrowserRouter([
           { path: "/reports", element: withModule("reports", <ReportsPage />) },
           { path: "/audit-logs", element: withModule("auditLogs", <AuditLogsPage />) },
           { path: "/resources", element: withModule("resources", <ResourcesPage />) },
+          { path: "/resources/:resourceId", element: withModule("resources", <ResourceDetailPage />) },
           { path: "/ai-assistant", element: withModule("aiAssistant", <AIAssistantPage />) },
           { path: "/integrations", element: withModule("integrations", <IntegrationsPage />) },
           { path: "/roles-permissions", element: withModule("rolesPermissions", <RolesPermissionsPage />) },
@@ -157,6 +164,7 @@ export const router = createBrowserRouter([
           { path: "/platform/organizations", element: withPlatformAdmin(<PlatformOrganizationsPage />) },
           { path: "/platform/organizations/:organizationId", element: withPlatformAdmin(<PlatformOrganizationDetailPage />) },
           { path: "/settings", element: withModule("settings", <SettingsPage />) },
+          { path: "/profile", element: withModule("profile", <ProfilePage />) },
         ],
       },
     ],

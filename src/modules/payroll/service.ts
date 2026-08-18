@@ -5,8 +5,12 @@ import type {
   PayrollRunGenerateResult,
   Payslip,
   PayslipLineItemCreatePayload,
+  RecurringLineItem,
+  RecurringLineItemCreatePayload,
+  RecurringLineItemUpdatePayload,
   SalaryStructure,
   SalaryStructureUpsertPayload,
+  SkippedEmployee,
 } from "./types";
 
 export const salaryStructureService = {
@@ -59,6 +63,10 @@ export const payrollRunService = {
     const { data } = await apiClient.get<{ items: Payslip[] }>(`/payroll-runs/${id}/payslips`);
     return data;
   },
+  async listMissingSalary(): Promise<SkippedEmployee[]> {
+    const { data } = await apiClient.get<SkippedEmployee[]>("/payroll-runs/missing-salary");
+    return data;
+  },
 };
 
 export const payslipService = {
@@ -76,6 +84,25 @@ export const payslipService = {
   },
   async getEmployeeHistory(userId: string): Promise<{ items: Payslip[] }> {
     const { data } = await apiClient.get<{ items: Payslip[] }>(`/users/${userId}/payslips`);
+    return data;
+  },
+};
+
+export const recurringLineItemService = {
+  async list(userId: string): Promise<RecurringLineItem[]> {
+    const { data } = await apiClient.get<RecurringLineItem[]>(`/recurring-line-items/${userId}`);
+    return data;
+  },
+  async create(userId: string, payload: RecurringLineItemCreatePayload): Promise<RecurringLineItem> {
+    const { data } = await apiClient.post<RecurringLineItem>(`/recurring-line-items/${userId}`, payload);
+    return data;
+  },
+  async update(itemId: string, payload: RecurringLineItemUpdatePayload): Promise<RecurringLineItem> {
+    const { data } = await apiClient.patch<RecurringLineItem>(`/recurring-line-items/${itemId}`, payload);
+    return data;
+  },
+  async deactivate(itemId: string): Promise<RecurringLineItem> {
+    const { data } = await apiClient.delete<RecurringLineItem>(`/recurring-line-items/${itemId}`);
     return data;
   },
 };

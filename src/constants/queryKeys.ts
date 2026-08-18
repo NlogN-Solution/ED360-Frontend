@@ -60,10 +60,37 @@ export const queryKeys = {
     list: (params: unknown) => ["payroll-runs", "list", params] as const,
     detail: (id: string) => ["payroll-runs", "detail", id] as const,
     payslips: (runId: string) => ["payroll-runs", runId, "payslips"] as const,
+    missingSalary: ["payroll-runs", "missing-salary"] as const,
   },
   payslips: {
     detail: (id: string) => ["payslips", "detail", id] as const,
     employeeHistory: (userId: string) => ["payslips", "employee-history", userId] as const,
+  },
+  recurringLineItems: {
+    list: (userId: string) => ["recurring-line-items", userId] as const,
+  },
+  duties: {
+    all: ["duties"] as const,
+    list: (params: unknown) => ["duties", "list", params] as const,
+    detail: (id: string) => ["duties", "detail", id] as const,
+    mine: ["duties", "mine"] as const,
+    minePending: ["duties", "mine", "pending"] as const,
+    versions: (id: string) => ["duties", id, "versions"] as const,
+    acknowledgements: (id: string) => ["duties", id, "acknowledgements"] as const,
+  },
+  resources: {
+    all: ["resources"] as const,
+    list: (params: unknown) => ["resources", "list", params] as const,
+    detail: (id: string) => ["resources", "detail", id] as const,
+  },
+  reports: {
+    datasets: ["reports", "datasets"] as const,
+    saved: ["reports", "saved"] as const,
+  },
+  audienceSegments: {
+    all: ["audience-segments"] as const,
+    detail: (id: string) => ["audience-segments", "detail", id] as const,
+    preview: (id: string, page: number) => ["audience-segments", id, "preview", page] as const,
   },
   studentEducation: {
     list: (userId: string) => ["student-education", userId] as const,

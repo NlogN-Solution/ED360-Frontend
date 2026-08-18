@@ -7,14 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { API_BASE_URL } from "@/services/apiClient";
 import { useOrganization, useUpdateOrganization, useUploadOrgFavicon, useUploadOrgLogo } from "@/modules/subscription/hooks";
 import { toTitleCase } from "@/utils/format";
-
-function resolveUrl(url: string | null): string | undefined {
-  if (!url) return undefined;
-  return url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
-}
+import { resolveUploadUrl } from "@/utils/url";
 
 function ImageUploader({
   label,
@@ -38,7 +33,7 @@ function ImageUploader({
           className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-border bg-muted ${shape === "round" ? "rounded-full" : "rounded-lg"}`}
         >
           {url ? (
-            <img src={resolveUrl(url)} alt={label} className="h-full w-full object-contain" />
+            <img src={resolveUploadUrl(url)} alt={label} className="h-full w-full object-contain" />
           ) : (
             <Upload className="h-4 w-4 text-muted-foreground" />
           )}

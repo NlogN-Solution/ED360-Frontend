@@ -31,6 +31,7 @@ import { Breadcrumbs } from "./Breadcrumbs";
 import { useUIStore } from "@/hooks/useUIStore";
 import { useThemeStore } from "@/hooks/useTheme";
 import { useAuthStore } from "@/services/authStore";
+import { isManagerRole } from "@/constants/permissions";
 import { useLogout } from "@/hooks/useAuth";
 import { useNotifications, useMarkNotificationRead } from "@/modules/notifications/hooks";
 import { notificationPath } from "@/modules/notifications/utils";
@@ -52,6 +53,7 @@ export function Topbar() {
   const navigate = useNavigate();
 
   const isStudent = user?.role === UserRole.STUDENT;
+  const canManagePlatform = isManagerRole(user?.role);
 
   const { data } = useNotifications({ limit: 8 }, { refetchInterval: 30_000 });
   const markRead = useMarkNotificationRead();
@@ -306,9 +308,14 @@ export function Topbar() {
               <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => navigate("/settings")}>
+            <DropdownMenuItem onSelect={() => navigate("/profile")}>
               <SettingsIcon className="h-4 w-4" /> Profile
             </DropdownMenuItem>
+            {canManagePlatform && (
+              <DropdownMenuItem onSelect={() => navigate("/settings")}>
+                <SettingsIcon className="h-4 w-4" /> Settings
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onSelect={() => logout.mutate()} className="text-danger focus:text-danger">
               <LogOut className="h-4 w-4" /> Log out
             </DropdownMenuItem>

@@ -2,8 +2,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { queryKeys } from "@/constants/queryKeys";
 import { getErrorMessage } from "@/utils/errors";
-import { payrollRunService, payslipService, salaryStructureService, type PayrollRunListParams } from "./service";
-import type { PayslipLineItemCreatePayload, SalaryStructureUpsertPayload } from "./types";
+import {
+  payrollRunService,
+  payslipService,
+  recurringLineItemService,
+  salaryStructureService,
+  type PayrollRunListParams,
+} from "./service";
+import type {
+  PayslipLineItemCreatePayload,
+  RecurringLineItemCreatePayload,
+  RecurringLineItemUpdatePayload,
+  SalaryStructureUpsertPayload,
+} from "./types";
 
 export function useSalaryStructure(userId: string | undefined) {
   return useQuery({
@@ -41,14 +52,22 @@ export function usePayrollRun(id: string | undefined) {
   });
 }
 
+export function useMissingSalaryEmployees() {
+  return useQuery({
+    queryKey: queryKeys.payrollRuns.missingSalary,
+    queryFn: () => payrollRunService.listMissingSalary(),
+  });
+}
+
 export function useCreatePayrollRun() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ year, month }: { year: number; month: number }) => payrollRunService.create(year, month),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.payrollRuns.all });
-      if (result.skipped_employees > 0) {
-        toast.success(`Payroll run generated — ${result.skipped_employees} employee(s) skipped (no salary set)`);
+      const skippedCount = result.skipped_employees.length;
+      if (skippedCount > 0) {
+        toast.success(`Payroll run generated — ${skippedCount} employee(s) skipped (no salary set)`);
       } else {
         toast.success("Payroll run generated");
       }
@@ -137,5 +156,55 @@ export function useRemovePayslipLineItem(payslipId: string) {
       toast.success("Line item removed");
     },
     onError: (error) => toast.error(getErrorMessage(error, "Couldn't remove line item")),
+  });
+}
+
+export function useRecurringLineItems(userId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.recurringLineItems.list(userId ?? ""),
+    queryFn: () => recurringLineItemService.list(userId as string),
+    enabled: Boolean(userId),
+  });
+}
+
+function useInvalidateRecurringLineItems(userId: string) {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: queryKeys.recurringLineItems.list(userId) });
+}
+
+export function useCreateRecurringLineItem(userId: string) {
+  const invalidate = useInvalidateRecurringLineItems(userId);
+  return useMutation({
+    mutationFn: (payload: RecurringLineItemCreatePayload) => recurringLineItemService.create(userId, payload),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Recurring item added");
+    },
+    onError: (error) => toast.error(getErrorMessage(error, "Couldn't add recurring item")),
+  });
+}
+
+export function useUpdateRecurringLineItem(userId: string) {
+  const invalidate = useInvalidateRecurringLineItems(userId);
+  return useMutation({
+    mutationFn: ({ itemId, payload }: { itemId: string; payload: RecurringLineItemUpdatePayload }) =>
+      recurringLineItemService.update(itemId, payload),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Recurring item updated");
+    },
+    onError: (error) => toast.error(getErrorMessage(error, "Couldn't update recurring item")),
+  });
+}
+
+export function useDeactivateRecurringLineItem(userId: string) {
+  const invalidate = useInvalidateRecurringLineItems(userId);
+  return useMutation({
+    mutationFn: (itemId: string) => recurringLineItemService.deactivate(itemId),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Recurring item removed");
+    },
+    onError: (error) => toast.error(getErrorMessage(error, "Couldn't remove recurring item")),
   });
 }

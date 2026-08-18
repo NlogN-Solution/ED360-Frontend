@@ -5,6 +5,8 @@ import { NAV_GROUPS, ALL_NAV_ITEMS } from "@/constants/navigation";
 import { canAccessModule, canAccessPlatformAdmin } from "@/constants/permissions";
 import { useAuthStore } from "@/services/authStore";
 import { useUIStore } from "@/hooks/useUIStore";
+import { useOrganization } from "@/modules/subscription/hooks";
+import { resolveUploadUrl } from "@/utils/url";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -66,8 +68,11 @@ export function Sidebar() {
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const pinnedPaths = useUIStore((s) => s.pinnedPaths);
+  const { data: organization } = useOrganization();
 
   const pinnedItems = ALL_NAV_ITEMS.filter((item) => pinnedPaths.includes(item.path));
+  const logoUrl = resolveUploadUrl(organization?.logo_url);
+  const orgName = organization?.name || "ED360";
 
   return (
     <aside
@@ -77,10 +82,14 @@ export function Sidebar() {
       )}
     >
       <div className={cn("flex h-14 items-center gap-2 px-4", collapsed && "justify-center px-0")}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <Zap className="h-3.5 w-3.5" strokeWidth={2.5} />
-        </div>
-        {!collapsed && <span className="truncate text-[13px] font-semibold tracking-tight">ED360</span>}
+        {logoUrl ? (
+          <img src={logoUrl} alt={orgName} className="h-7 w-7 shrink-0 rounded-md object-cover" />
+        ) : (
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <Zap className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </div>
+        )}
+        {!collapsed && <span className="truncate text-[13px] font-semibold tracking-tight">{orgName}</span>}
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto px-2.5 py-2 scrollbar-none">
